@@ -1,3 +1,4 @@
+package com.game.abominodo4.view;
 import java.io.*;
 import java.net.*;
 
@@ -24,4 +25,4 @@ public final class IOLibrary {
     } while (true);
   }
 
-}
+}   

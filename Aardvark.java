@@ -1,3 +1,5 @@
+package com.game.abominodo4.controller;
+
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.io.*;
@@ -9,14 +11,24 @@ import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 
+import com.game.abominodo4.model.Domino;
+import com.game.abominodo4.model.Location;
+import com.game.abominodo4.model.Location.DIRECTION;
+import com.game.abominodo4.service.ConnectionGenius;
+import com.game.abominodo4.service.IOSpecialist;
+import com.game.abominodo4.util.KeyConstant;
+import com.game.abominodo4.util.MultiLinugualStringTable;
+import com.game.abominodo4.view.IOLibrary;
+import com.game.abominodo4.view.PictureFrame;
+
 public class Aardvark {
 
   private String playerName;
-  public List<Domino> _d;
-  public List<Domino> _g;
+  private List<Domino> dl;	// This is a bad smell for variable declaration _d to dl or dList and you need to declare class variable as private
+  private List<Domino> gl;	// This is a bad smell for variable declaration _g to gl or gList and you need to declare class variable as private
   public int[][] grid = new int[7][8];
   public int[][] gg = new int[7][8];
-  int mode = -1;
+  public int mode = -1;
   int cf;
   int score;
   long startTime;
@@ -24,14 +36,14 @@ public class Aardvark {
   PictureFrame pf = new PictureFrame();
 
   private void generateDominoes() {
-    _d = new LinkedList<Domino>();
+	dl = new LinkedList<Domino>();
     int count = 0;
     int x = 0;
     int y = 0;
     for (int l = 0; l <= 6; l++) {
       for (int h = l; h <= 6; h++) {
         Domino d = new Domino(h, l);
-        _d.add(d);
+        dl.add(d);
         d.place(x, y, x + 1, y);
         count++;
         x += 2;
@@ -42,31 +54,31 @@ public class Aardvark {
       }
     }
     if (count != 28) {
-      System.out.println("something went wrong generating dominoes");
+      System.out.println(KeyConstant.MSG_WRONG_DOMINOES);	// You need to add all message in a constant class- this is a bad smell this fixed like this
       System.exit(0);
     }
   }
 
   private void generateGuesses() {
-    _g = new LinkedList<Domino>();
+    gl = new LinkedList<Domino>();
     int count = 0;
-    int x = 0;
-    int y = 0;
+    //int x = 0;		//The value of the local variable x is not used - this is a bad smell (Temporary Field) this fixed like this
+    //int y = 0;		//The value of the local variable y is not used - this is a bad smell (Temporary Field) this fixed like this
     for (int l = 0; l <= 6; l++) {
       for (int h = l; h <= 6; h++) {
         Domino d = new Domino(h, l);
-        _g.add(d);
+        gl.add(d);
         count++;
       }
     }
     if (count != 28) {
-      System.out.println("something went wrong generating dominoes");
+      System.out.println(KeyConstant.MSG_WRONG_DOMINOES);
       System.exit(0);
     }
   }
 
   void collateGrid() {
-    for (Domino d : _d) {
+    for (Domino d : dl) {
       if (!d.placed) {
         grid[d.hy][d.hx] = 9;
         grid[d.ly][d.lx] = 9;
@@ -83,7 +95,7 @@ public class Aardvark {
         gg[r][c] = 9;
       }
     }
-    for (Domino d : _g) {
+    for (Domino d : gl) {
       if (d.placed) {
         gg[d.hy][d.hx] = d.high;
         gg[d.ly][d.lx] = d.low;
@@ -91,7 +103,7 @@ public class Aardvark {
     }
   }
 
-  int printGrid() {
+  int pg() {
     for (int are = 0; are < 7; are++) {
       for (int see = 0; see < 8; see++) {
         if (grid[are][see] != 9) {
@@ -122,17 +134,17 @@ public class Aardvark {
   private void shuffleDominoesOrder() {
     List<Domino> shuffled = new LinkedList<Domino>();
 
-    while (_d.size() > 0) {
-      int n = (int) (Math.random() * _d.size());
-      shuffled.add(_d.get(n));
-      _d.remove(n);
+    while (dl.size() > 0) {
+      int n = (int) (Math.random() * dl.size());
+      shuffled.add(dl.get(n));
+      dl.remove(n);
     }
 
-    _d = shuffled;
+    dl = shuffled;
   }
 
   private void invertSomeDominoes() {
-    for (Domino d : _d) {
+    for (Domino d : dl) {
       if (Math.random() > 0.5) {
         d.invert();
       }
@@ -143,7 +155,7 @@ public class Aardvark {
     int x = 0;
     int y = 0;
     int count = 0;
-    for (Domino d : _d) {
+    for (Domino d : dl) {
       count++;
       d.place(x, y, x + 1, y);
       x += 2;
@@ -153,33 +165,49 @@ public class Aardvark {
       }
     }
     if (count != 28) {
-      System.out.println("something went wrong generating dominoes");
+      System.out.println(KeyConstant.MSG_WRONG_DOMINOES);
       System.exit(0);
     }
   }
 
-  private void rotateDominoes() {
-    // for (Domino d : dominoes) {
-    // if (Math.random() > 0.5) {
-    // System.out.println("rotating " + d);
-    // }
-    // }
-    for (int x = 0; x < 7; x++) {
-      for (int y = 0; y < 6; y++) {
-
-        tryToRotateDominoAt(x, y);
-      }
-    }
+  private void rotateDominoes() 
+  {
+     /*for (Domino d : dominoes) 
+     {
+	     if (Math.random() > 0.5) {
+	    	 System.out.println("rotating " + d);
+	     }
+     }*/
+     
+     for (int x = 0; x < 7; x++) 
+     {
+	      for (int y = 0; y < 6; y++) {
+	        tryToRotateDominoAt(x, y);
+	      }
+     }
   }
 
   private void tryToRotateDominoAt(int x, int y) {
-    Domino d = findDominoAndGuess(x, y, _d);
-    if (thisIsTopLeftOfDomino(x, y, d)) {
-      if (d.ishl()) {
-        boolean weFancyARotation = Math.random() < 0.5;
-        if (weFancyARotation) {
+	  try
+	  {
+	    Domino d = findDominoAt(x, y);
+	    boolean status = thisIsTopLeftOfDomino(x, y, d);
+	    if (status) {
+	    	boolean isWeFancyARotation = Math.random() < 0.5;    	
+	    	if (d.ishl()) 
+	    		methodIshlTrue(x, y, d, isWeFancyARotation);        
+	    	else 
+	    		methodIshlFalse(x, y, d, isWeFancyARotation);
+	    }
+	  }
+	  catch(NullPointerException e) {e.printStackTrace();}
+  }
+  
+  private Domino methodIshlTrue(int x, int y, Domino d, boolean isWeFancyARotation)
+  {
+	  if (isWeFancyARotation) {
           if (theCellBelowIsTopLeftOfHorizontalDomino(x, y)) {
-            Domino e = findDominoAndGuess(x, y + 1, _d);
+            Domino e = findDominoAt(x, y + 1);
             e.hx = x;
             e.lx = x;
             d.hx = x + 1;
@@ -189,12 +217,12 @@ public class Aardvark {
             d.ly = y + 1;
             d.hy = y;
           }
-        }
-      } else {
-        boolean weFancyARotation = Math.random() < 0.5;
-        if (weFancyARotation) {
-          if (theCellToTheRightIsTopLeftOfVerticalDomino(x, y)) {
-            Domino e = findDominoAndGuess(x + 1, y, _d);
+       }
+	  return d;
+  }
+  private Domino methodIshlFalse(int x, int y, Domino d, boolean isWeFancyARotation) {
+	  if (theCellToTheRightIsTopLeftOfVerticalDomino(x, y)) {
+            Domino e = findDominoAt(x + 1, y);
             e.hx = x;
             e.lx = x + 1;
             d.hx = x;
@@ -203,20 +231,17 @@ public class Aardvark {
             e.hy = y + 1;
             d.ly = y;
             d.hy = y;
-          }
-        }
-
-      }
-    }
+     }
+	 return d;
   }
 
   private boolean theCellToTheRightIsTopLeftOfVerticalDomino(int x, int y) {
-    Domino e = findDominoAndGuess(x + 1, y, _d);
+    Domino e = findDominoAt(x + 1, y);
     return thisIsTopLeftOfDomino(x + 1, y, e) && !e.ishl();
   }
 
   private boolean theCellBelowIsTopLeftOfHorizontalDomino(int x, int y) {
-    Domino e = findDominoAndGuess(x, y + 1, _d);
+    Domino e = findDominoAt(x, y + 1);
     return thisIsTopLeftOfDomino(x, y + 1, e) && e.ishl();
   }
 
@@ -225,7 +250,7 @@ public class Aardvark {
   }
 
   private Domino findDominoAt(int x, int y) {
-    for (Domino d : _d) {
+    for (Domino d : dl) {
       if ((d.lx == x && d.ly == y) || (d.hx == x && d.hy == y)) {
         return d;
       }
@@ -233,8 +258,8 @@ public class Aardvark {
     return null;
   }
 
-  private Domino findDominoAndGuess(int x, int y, List<Domino> _r) {
-    for (Domino d : _r) {
+  private Domino findGuessAt(int x, int y) {
+    for (Domino d : gl) {
       if ((d.lx == x && d.ly == y) || (d.hx == x && d.hy == y)) {
         return d;
       }
@@ -243,7 +268,7 @@ public class Aardvark {
   }
 
   private Domino findGuessByLH(int x, int y) {
-    for (Domino d : _g) {
+    for (Domino d : gl) {
       if ((d.low == x && d.high == y) || (d.high == x && d.low == y)) {
         return d;
       }
@@ -252,7 +277,7 @@ public class Aardvark {
   }
 
   private Domino findDominoByLH(int x, int y) {
-    for (Domino d : _d) {
+    for (Domino d : dl) {
       if ((d.low == x && d.high == y) || (d.high == x && d.low == y)) {
         return d;
       }
@@ -261,37 +286,38 @@ public class Aardvark {
   }
 
   private void printDominoes() {
-    for (Domino d : _d) {
+    for (Domino d : dl) {
       System.out.println(d);
     }
   }
 
   private void printGuesses() {
-    for (Domino d : _g) {
+    for (Domino d : gl) {
       System.out.println(d);
     }
   }
 
   public final int ZERO = 0;
 
+  // This is a long method bad smell (Bloaters-Long Method) this fixed like this
   public void run() {
-
-    IOLibrary io = new IOLibrary();
+	  
+    IOSpecialist io = new IOSpecialist();
+    
     System.out.println("Welcome To Abominodo - The Best Dominoes Puzzle Game in the Universe");
-
     System.out.println("Version 1.0 (c), Kevan Buckley, 2010");
     System.out.println();
     System.out.println(MultiLinugualStringTable.getMessage(0));
     playerName = io.getString();
 
-    System.out.printf("%s %s. %s", MultiLinugualStringTable.getMessage(1), playerName,
-            MultiLinugualStringTable.getMessage(2));
+    System.out.printf("%s %s. %s", MultiLinugualStringTable.getMessage(1), playerName, MultiLinugualStringTable.getMessage(2));
 
-    int _$_ = -9;
-    while (_$_ != ZERO) {
+    int index = -9;
+    while (index != ZERO) {
       System.out.println();
+
       String h1 = "Main menu";
-      String u1 = h1.replaceAll(".", "=");
+      String u1 = h1.replaceAll(".", "==");
       System.out.println(u1);
       System.out.println(h1);
       System.out.println(u1);
@@ -302,18 +328,18 @@ public class Aardvark {
       // System.out.println("4) Multiplayer play");
       System.out.println("0) Quit");
 
-      _$_ = -9;
-      while (_$_ == -9) {
+      index = -9;
+      while (index == -9) {
         try {
           String s1 = io.getString();
-          _$_ = Integer.parseInt(s1);
+          index = Integer.parseInt(s1);
         } catch (Exception e) {
-          _$_ = -9;
+        	index = -9;
         }
       }
-      switch (_$_) {
+      switch (index) {
       case 0: {
-        if (_d == null) {
+        if (dl == null) {
           System.out.println("It is a shame that you did not want to play");
         } else {
           System.out.println("Thankyou for playing");
@@ -322,12 +348,14 @@ public class Aardvark {
         break;
       }
       case 1: {
+    	  
         System.out.println();
         String h4 = "Select difficulty";
-        String u4 = h4.replaceAll(".", "=");
+        String u4 = h4.replaceAll(".", "==");
         System.out.println(u4);
         System.out.println(h4);
-        System.out.println(u4);
+        System.out.println(
+);
         System.out.println("1) Simples");
         System.out.println("2) Not-so-simples");
         System.out.println("3) Super-duper-shuffled");
@@ -367,20 +395,21 @@ public class Aardvark {
           collateGrid();
           break;
         }
-        printGrid();
+        pg();
         generateGuesses();
         collateGuessGrid();
         mode = 1;
         cf = 0;
         score = 0;
         startTime = System.currentTimeMillis();
-        pf.PictureFrame(this);
+        //pf.PictureFrame(this);	//Method name is not same as the constructor name - this is a bad smell (Naming Convention) this fixed like this
+        pf.pictureFrame(this);
         pf.dp.repaint();
         int c3 = -7;
         while (c3 != ZERO) {
           System.out.println();
           String h5 = "Play menu";
-          String u5 = h5.replaceAll(".", "=");
+          String u5 = h5.replaceAll(".", "==");
           System.out.println(u5);
           System.out.println(h5);
           System.out.println(u5);
@@ -409,13 +438,13 @@ public class Aardvark {
 
             break;
           case 1:
-            printGrid();
+            pg();
             break;
           case 2:
             printGuessGrid();
             break;
           case 3:
-            Collections.sort(_g);
+            Collections.sort(gl);
             printGuesses();
             break;
           case 4:
@@ -446,7 +475,7 @@ public class Aardvark {
             x--;
             y--;
             System.out.println("Horizontal or Vertical (H or V)?");
-            boolean horiz;
+            //boolean horiz;	//The value of the local variable horiz is not used - this is a bad smell (Temporary Field) this fixed like this
             int y2,
             x2;
             Location lotion;
@@ -455,13 +484,13 @@ public class Aardvark {
               if (s3 != null && s3.toUpperCase().startsWith("H")) {
                 lotion = new Location(x, y, Location.DIRECTION.HORIZONTAL);
                 System.out.println("Direction to place is " + lotion.d);
-                horiz = true;
+               // horiz = true;	// You need not to initialize the value, because it's not used (bad smell - Temporary Field)
                 x2 = x + 1;
                 y2 = y;
                 break;
               }
               if (s3 != null && s3.toUpperCase().startsWith("V")) {
-                horiz = false;
+               // horiz = false;	// You need not to initialize the value, because it's not used (bad smell - Temporary Field)
                 lotion = new Location(x, y, Location.DIRECTION.VERTICAL);
                 System.out.println("Direction to place is " + lotion.d);
                 x2 = x;
@@ -529,7 +558,7 @@ public class Aardvark {
             }
             x13--;
             y13--;
-            Domino lkj = findDominoAndGuess(x13, y13, _g);
+            Domino lkj = findGuessAt(x13, y13);
             if (lkj == null) {
               System.out.println("Couln't find a domino there");
             } else {
@@ -547,7 +576,7 @@ public class Aardvark {
           case 6:
             System.out.println();
             String h8 = "So you want to cheat, huh?";
-            String u8 = h8.replaceAll(".", "=");
+            String u8 = h8.replaceAll(".", "==");
             System.out.println(u8);
             System.out.println(h8);
             System.out.println(u8);
@@ -578,21 +607,20 @@ public class Aardvark {
                 cf++;
                 break;
               case 1:
-                System.out
-                    .println("So you though you could get the 3 point bonus twice");
+                System.out.println("So you though you could get the 3 point bonus twice");
                 System.out.println("You need to check your score");
                 if (score > 0) {
                   score = -score;
                 } else {
                   score -= 100;
                 }
-                playerName = playerName + "(scoundrel)";
+               // playerName = playerName + "(scoundrel)"; //This is a bad smell (magic number) this fixed like this
+                playerName += "(scoundrel)";
                 cf++;
                 break;
               default:
                 System.out.println("Some people just don't learn");
-                playerName = playerName.replace("scoundrel",
-                    "pathetic scoundrel");
+                playerName = playerName.replace("scoundrel", "pathetic scoundrel");
                 for (int i = 0; i < 10000; i++) {
                   score--;
                 }
@@ -650,7 +678,7 @@ public class Aardvark {
               }
               x3--;
               y3--;
-              Domino lkj2 = findDominoAndGuess(x3, y3, _d);
+              Domino lkj2 = findDominoAt(x3, y3);
               System.out.println(lkj2);
               break;
             case 3: {
@@ -721,13 +749,12 @@ public class Aardvark {
 
         }
         mode = 0;
-        printGrid();
+        pg();
         pf.dp.repaint();
         long now = System.currentTimeMillis();
         try {
           Thread.sleep(1000);
-        } catch (InterruptedException e) {
-          // TODO Auto-generated catch block
+        } catch (InterruptedException e) {          
           e.printStackTrace();
         }
         int gap = (int) (now - startTime);
@@ -736,7 +763,7 @@ public class Aardvark {
         recordTheScore();
         System.out.println("Here is the solution:");
         System.out.println();
-        Collections.sort(_d);
+        Collections.sort(dl);
         printDominoes();
         System.out.println("you scored " + score);
 
@@ -744,17 +771,17 @@ public class Aardvark {
         break;
       case 2: {
         String h4 = "High Scores";
-        String u4 = h4.replaceAll(".", "=");
+        String u4 = h4.replaceAll(".", "==");
         System.out.println(u4);
         System.out.println(h4);
         System.out.println(u4);
 
-        File f = new File("score.txt");
+        File f = new File(KeyConstant.FILE_NAME_SCORE);	// String literals should not be duplicated (bad smell Duplicated Field)
         if (!(f.exists() && f.isFile() && f.canRead())) {
           System.out.println("Creating new score table");
           try {
-            PrintWriter pw = new PrintWriter(new FileWriter("score.txt", true));
-            String n = playerName.replaceAll(",", "_");
+            PrintWriter pw = new PrintWriter(new FileWriter(KeyConstant.FILE_NAME_SCORE, true));
+            //String n = playerName.replaceAll(",", "_");	// You need not to initialize the value, because this value is never used (bad smell Temporary Field)
             pw.print("Hugh Jass");
             pw.print(",");
             pw.print(1500);
@@ -767,21 +794,24 @@ public class Aardvark {
             pw.println(1281625395123L);
             pw.flush();
             pw.close();
-          } catch (Exception e) {
-            System.out.println("Something went wrong saving scores");
+          } 
+          catch (Exception e) {        	  
+            System.out.println(KeyConstant.MSG_WRONG_DOMINOES);
           }
         }
-        try {
+        try (BufferedReader r = new BufferedReader(new FileReader(f)))	// So better to used try with resources like this
+        {
           DateFormat ft = DateFormat.getDateInstance(DateFormat.LONG);
-          BufferedReader r = new BufferedReader(new FileReader(f));
-          while (5 / 3 == 1) {
+         // BufferedReader r = new BufferedReader(new FileReader(f));	// declared BufferedReader is Not closed - this is a bad smell
+          
+         // while (5/3 == 1)	// This is a very bad smell (Data Clumps) 
+          while (true) // Better to used boolean value true, which is always satisfy the condition.
+          {
             String lin = r.readLine();
             if (lin == null || lin.length() == 0)
               break;
             String[] parts = lin.split(",");
-            System.out.printf("%20s %6s %s\n", parts[0], parts[1], ft
-                .format(new Date(Long.parseLong(parts[2]))));
-
+            System.out.printf("%20s %6s %s\n", parts[0], parts[1], ft.format(new Date(Long.parseLong(parts[2]))));
           }
 
         } catch (Exception e) {
@@ -794,7 +824,7 @@ public class Aardvark {
 
       case 3: {
         String h4 = "Rules";
-        String u4 = h4.replaceAll(".", "=");
+        String u4 = h4.replaceAll(".", "==");
         System.out.println(u4);
         System.out.println(h4);
         System.out.println(u4);
@@ -805,33 +835,28 @@ public class Aardvark {
         f.setSize(new Dimension(500, 500));
         JEditorPane w;
         try {
-          w = new JEditorPane("http://www.scit.wlv.ac.uk/~in6659/abominodo/");
-
-        } catch (Exception e) {
-          w = new JEditorPane("text/plain",
-              "Problems retrieving the rules from the Internet");
+          w = new JEditorPane(KeyConstant.J_PANEL_URI);
+        } 
+        catch (Exception e) {
+          w = new JEditorPane("text/plain", "Problems retrieving the rules from the Internet");
         }
         f.setContentPane(new JScrollPane(w));
         f.setVisible(true);
         f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
         break;
 
       }
       case 4:
-        System.out
-            .println("Please enter the ip address of you opponent's computer");
+        System.out.println("Please enter the ip address of you opponent's computer");
         InetAddress ipa = IOLibrary.getIPAddress();
         new ConnectionGenius(ipa).fireUpGame();
       }
-
     }
-
   }
 
   private void recordTheScore() {
     try {
-      PrintWriter pw = new PrintWriter(new FileWriter("score.txt", true));
+      PrintWriter pw = new PrintWriter(new FileWriter(KeyConstant.FILE_NAME_SCORE, true));
       String n = playerName.replaceAll(",", "_");
       pw.print(n);
       pw.print(",");
@@ -841,7 +866,7 @@ public class Aardvark {
       pw.flush();
       pw.close();
     } catch (Exception e) {
-      System.out.println("Something went wrong saving scores");
+      System.out.println(KeyConstant.MSG_WRONG_DOMINOES);
     }
   }
 
@@ -849,22 +874,31 @@ public class Aardvark {
     new Aardvark().run();
   }
 
-  public static int gecko(int _) {
-    if (_ == (32 & 16)) {
+  public void drawDominoes(Graphics g) {
+    for (Domino d : dl) {
+      pf.dp.drawDomino(g, d);
+    }
+  }
+
+  public static int gecko(int gc) 
+  {
+    if (gc == (32 & 16)) {
       return -7;
     } else {
-      if (_ < 0) {
-        return gecko(_ + 1 | 0);
+      if (gc < 0) {
+        return gecko(gc + 1 | 0);
       } else {
-        return gecko(_ - 1 | 0);
+        return gecko(gc - 1 | 0);
       }
     }
   }
 
-  public void drawGuesses(Graphics g) {
-    for (Domino d : _g) {
+  public void drawGuesses(Graphics g)
+  {
+    for (Domino d : gl) {
       pf.dp.drawDomino(g, d);
     }
   }
 
 }
+  

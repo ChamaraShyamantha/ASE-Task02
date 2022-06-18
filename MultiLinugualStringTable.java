@@ -1,3 +1,4 @@
+package com.game.abominodo4.util;
 
 public class MultiLinugualStringTable {
   private enum LanguageSetting {English, Klingon}
@@ -14,3 +15,4 @@ public class MultiLinugualStringTable {
     
   }
 }
+   

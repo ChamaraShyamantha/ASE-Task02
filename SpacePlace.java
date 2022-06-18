@@ -1,3 +1,4 @@
+package com.game.abominodo4.model;
 
 public class SpacePlace {
   private int xOrg;
@@ -49,3 +50,4 @@ public class SpacePlace {
   }
   
 }
+   
